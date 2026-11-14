@@ -1,92 +1,85 @@
-# Obsidian Sample Plugin
+# Reading progress and Canvas navigation
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A small, offline Obsidian plugin with two features. No runtime dependencies, network requests, telemetry, or scroll-speed changes.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Folder reading progress
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+Two icons appear in the left ribbon:
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+- **Track current folder / Untrack current folder**: toggle tracking for the open file's immediate parent folder. A notice confirms the change; the icon changes when the current folder is tracked. Files in the vault root are supported too.
+- **Continue reading**: search tracked folders and open the last file you read in the selected folder.
 
-## First time developing plugins?
+Opening another file in a tracked folder updates its progress automatically. Subfolders are independent: tracking `Books` does not track `Books/Novel`. Progress means the last-opened file, not cursor or scroll position. Both ribbon actions are also available in the command palette.
 
-Quick starting guide for new plugin devs:
+### Storage and syncing
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+Progress is stored in `.obsidian/progress-track.json` (or the equivalent path if you use a custom vault configuration folder):
 
 ```json
 {
-	"fundingUrl": "https://buymeacoffee.com"
+  "version": 1,
+  "folders": {
+    "Books/Novel": "Books/Novel/Chapter 3.md"
+  }
 }
 ```
 
-If you have multiple URLs, you can also do:
+Use your existing sync tool to include this file **and the referenced notes**. The plugin does not provide a sync service, and not every sync tool includes arbitrary files inside `.obsidian`. Verify that this file reaches your other device. Concurrent edits on different devices can conflict; use one device at a time or resolve conflicts with your sync tool. Paths reveal folder and file names to whichever sync service you choose.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
+Writes within one plugin instance are queued and each update re-reads disk. Invalid data is reported instead of overwritten. In-vault renames update saved paths. Deleted/moved-away files remain recorded but are omitted from the picker until you open another file in that tracked folder. Deleted folders are untracked.
+
+## Canvas navigation
+
+With Canvas focused and no card being edited:
+
+| Keys | Action |
+| --- | --- |
+| `Left`, `h`, or `р` | Pan view left |
+| `Down`, `j`, or `о` | Pan view down |
+| `Up`, `k`, or `л` | Pan view up |
+| `Right`, `l`, or `д` | Pan view right |
+| `+` or `=` | Zoom in |
+| `-` | Zoom out |
+
+All mappings work **with or without Ctrl**, including zoom. Physical key positions support both English and Russian keyboard layouts; numpad `+` and `-` also work. Alt/Meta combinations and Shift+direction keys are left alone.
+
+Panning moves 20% of the visible viewport per press. Pan and center-based zoom animate smoothly; holding a key accumulates motion. Pointer/wheel input cancels the plugin's pending glide without changing native scrolling. These are keyboard keys, not additional ribbon buttons; Obsidian's existing Canvas zoom buttons remain unchanged.
+
+Keys are left alone in text inputs, card editors, dialogs, other panes, and outside Canvas. The six Canvas actions also appear in the command palette and can be assigned custom hotkeys in **Settings → Hotkeys**. The built-in mappings above stay active within Canvas.
+
+**Compatibility:** reading progress uses the public API; Canvas viewport navigation uses undocumented internals with runtime guards. Obsidian updates may require adjustments. Mobile-safe APIs are used; keyboard navigation requires a hardware keyboard. Real-device desktop/mobile testing is still required.
+
+## Development and installation
+
+```sh
+npm install
+npm test
+npm run lint
+npm run build
 ```
 
-## API Documentation
+Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugins/my-riced-obsidian/`, reload Obsidian, then enable the plugin in **Settings → Community plugins**. `npm run dev` rebuilds on changes. Generated `main.js` is not committed.
 
-See https://docs.obsidian.md
+For the local vault, run `npm run build` then `./install.sh`. The script copies the built plugin, manifest, and stylesheet into `~/Work/my-vault/.obsidian/plugins/my-riced-obsidian/`. It can be invoked from any directory and does not modify progress data.
+
+### Manual acceptance check
+
+1. Open `Books/A.md`, track the folder, then open `Books/B.md`. Verify the JSON records `Books/B.md`.
+2. Open a file elsewhere, select **Continue reading**, choose `Books`, and verify `B.md` opens. Restart Obsidian and repeat.
+3. Untrack `Books`; verify its JSON entry disappears. Check nested folders and files in the vault root independently.
+4. Rename a tracked folder/file; verify Continue still works. Delete the saved file; verify it is skipped and opening a replacement updates progress.
+5. In Canvas, try all directions and zoom keys, including holding keys. Confirm pan direction is view direction, zoom is centered, and both animate.
+6. Edit a card, focus sidebar search, and open a dialog: typing and native shortcuts should work normally. Repeat in a pop-out window.
+7. Disable/re-enable the plugin during an animation. Verify no lingering handlers or motion. Check a hardware keyboard on mobile.
+8. With your sync tool, confirm the JSON arrives on a second device and Continue opens the same file.
+
+## Development best practices used
+
+- Keep lifecycle registration in `src/main.ts`; isolate progress storage, picker UI, and undocumented Canvas APIs.
+- Use registered workspace/DOM events and cancel animation frames on unload.
+- Prefer public APIs, `this.app`, normalized vault-relative paths, safe DOM helpers, and sentence-case UI.
+- Use the adapter only for the requested hidden configuration file, which is outside the indexed Vault API.
+- Keep all behavior local, avoid scanning the vault, and skip unchanged writes.
+- Avoid global default hotkeys; the explicitly requested mappings are scoped to a non-editing Canvas.
+
+References: [Plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines), [Developer policies](https://docs.obsidian.md/Developer+policies), [API reference](https://docs.obsidian.md/Reference/TypeScript+API), [Mobile development](https://docs.obsidian.md/Plugins/Getting+started/Mobile+development).

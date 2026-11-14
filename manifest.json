@@ -1,11 +1,9 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "my-riced-obsidian",
+	"name": "Reading progress and canvas navigation",
 	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"minAppVersion": "1.5.0",
+	"description": "Resume reading in tracked folders and navigate Canvas with animated keyboard panning and zoom.",
+	"author": "Dmitry",
 	"isDesktopOnly": false
 }
